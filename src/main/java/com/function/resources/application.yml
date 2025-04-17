@@ -1,0 +1,12 @@
+spring:
+  cloud:
+    azure:
+      eventhub:
+        namespace: your-eventhub-namespace.servicebus.windows.net
+        name: your-eventhub-name
+      credential:
+        client-id: your-client-id
+        client-secret: your-client-secret
+        managed-identity-enabled: false
+      profile:
+        tenant-id: your-tenant-id

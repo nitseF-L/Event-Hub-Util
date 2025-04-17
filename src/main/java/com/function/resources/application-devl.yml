@@ -1,0 +1,17 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+  cloud:
+    azure:
+      eventhub:
+        namespace: your-eventhub-namespace.servicebus.windows.net
+        name: your-eventhub-name
+      credential:
+        client-id: your-client-id
+        client-secret: your-client-secret
+        managed-identity-enabled: false
+      profile:
+        tenant-id: your-tenant-id
+
+# YAML schema validation enabled via plugin/editor integration (e.g. IntelliJ or VS Code with YAML plugin)
