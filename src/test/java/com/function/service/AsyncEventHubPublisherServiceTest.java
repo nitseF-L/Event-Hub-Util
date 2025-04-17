@@ -5,7 +5,7 @@ import com.azure.messaging.eventhubs.EventHubProducerAsyncClient;
 import com.microsoft.azure.functions.ExecutionContext;
 import io.cloudevents.CloudEvent;
 import io.cloudevents.core.builder.CloudEventBuilder;
-
+import io.cloudevents.kafka.CloudEventSerializer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
@@ -18,19 +18,21 @@ import java.util.logging.Logger;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-class AsyncEventHubPublisherServiceTest {
+public class AsyncEventHubPublisherServiceTest {
 
     private EventHubProducerAsyncClient producerAsyncClient;
+    private CloudEventSerializer cloudEventSerializer;
     private ExecutionContext context;
     private AsyncEventHubPublisherService service;
 
     @BeforeEach
     void setUp() {
         producerAsyncClient = mock(EventHubProducerAsyncClient.class);
+        cloudEventSerializer = mock(CloudEventSerializer.class);
         context = mock(ExecutionContext.class);
         when(context.getLogger()).thenReturn(Logger.getLogger("TestLogger"));
 
-        service = new AsyncEventHubPublisherService(producerAsyncClient);
+        service = new AsyncEventHubPublisherService(producerAsyncClient, cloudEventSerializer);
     }
 
     @Test
@@ -56,18 +58,18 @@ class AsyncEventHubPublisherServiceTest {
 
         // Mock the serialization process
         byte[] eventBytes = "mocked-event-bytes".getBytes(); // Mocked serialized bytes
+        when(cloudEventSerializer.serialize("unused-topic", event)).thenReturn(eventBytes);
+
         EventData expectedEventData = new EventData(eventBytes);
 
         // Mock the producerAsyncClient behavior
         when(producerAsyncClient.send(Collections.singletonList(expectedEventData))).thenReturn(Mono.empty());
 
-        // Mock the serialization logic in the service
-        AsyncEventHubPublisherService serviceWithMockedSerialization = spy(service);
-        doReturn(eventBytes).when(serviceWithMockedSerialization).serializeEvent(event, context);
-
-        assertThatCode(() -> serviceWithMockedSerialization.publishAsync(event, context).join())
+        // Call the publishAsync method
+        assertThatCode(() -> service.publishAsync(event, context).join())
                 .doesNotThrowAnyException();
 
+        // Verify that the producerAsyncClient's send method was called
         verify(producerAsyncClient, times(1)).send(Collections.singletonList(expectedEventData));
     }
 
@@ -81,21 +83,41 @@ class AsyncEventHubPublisherServiceTest {
 
         // Mock the serialization process
         byte[] eventBytes = "mocked-event-bytes".getBytes(); // Mocked serialized bytes
+        when(cloudEventSerializer.serialize("unused-topic", event)).thenReturn(eventBytes);
+
         EventData expectedEventData = new EventData(eventBytes);
 
         // Mock the producerAsyncClient behavior to simulate a failure
         when(producerAsyncClient.send(Collections.singletonList(expectedEventData)))
                 .thenReturn(Mono.error(new RuntimeException("Simulated failure")));
 
-        // Mock the serialization logic in the service
-        AsyncEventHubPublisherService serviceWithMockedSerialization = spy(service);
-        doReturn(eventBytes).when(serviceWithMockedSerialization).serializeEvent(event, context);
-
-        assertThatThrownBy(() -> serviceWithMockedSerialization.publishAsync(event, context).join())
+        // Call the publishAsync method and verify it throws an exception
+        assertThatThrownBy(() -> service.publishAsync(event, context).join())
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("Simulated failure");
 
-        // Adjust the verification to match the retry count
+        // Verify that the producerAsyncClient's send method was called the expected number of times
         verify(producerAsyncClient, times(3)).send(Collections.singletonList(expectedEventData));
+    }
+
+    @Test
+    void publishAsync_shouldThrowSerializationException() {
+        CloudEvent event = CloudEventBuilder.v1()
+                .withId(UUID.randomUUID().toString())
+                .withType("test.type")
+                .withSource(URI.create("/test"))
+                .build();
+
+        // Mock the serialization process to throw an exception
+        when(cloudEventSerializer.serialize("unused-topic", event))
+                .thenThrow(new RuntimeException("Serialization failed"));
+
+        // Call the publishAsync method and verify it throws an exception
+        assertThatThrownBy(() -> service.publishAsync(event, context).join())
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Serialization failed");
+
+        // Verify that the producerAsyncClient's send method was never called
+        verify(producerAsyncClient, never()).send(anyList());
     }
 }
