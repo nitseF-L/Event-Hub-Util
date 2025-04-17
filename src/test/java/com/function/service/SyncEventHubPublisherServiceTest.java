@@ -42,16 +42,20 @@ class SyncEventHubPublisherServiceTest {
                 .withSource(URI.create("/test"))
                 .build();
 
-        byte[] eventBytes = EventFormatProvider
-                .getInstance()
-                .resolveFormat("application/cloudevents+json")
-                .serialize(event);
+        // Resolve the CloudEvent format
+        var eventFormat = EventFormatProvider.getInstance().resolveFormat("application/cloudevents+json");
+        assertThat(eventFormat).isNotNull(); // Ensure the format is not null
+
+        // Serialize the CloudEvent into a byte array
+        byte[] eventBytes = eventFormat.serialize(event);
 
         EventData expectedEventData = new EventData(eventBytes);
 
+        // Call the publishSync method and verify no exceptions are thrown
         assertThatCode(() -> service.publishSync(event, context))
                 .doesNotThrowAnyException();
 
+        // Verify that the producerClient's send method was called with the expected data        
         verify(producerClient, times(1)).send(Collections.singletonList(expectedEventData));
     }
 
