@@ -27,6 +27,7 @@ public class SyncEventHubPublisherService implements EventHubPublisherService {
 
     // Azure Event Hub producer client for sending events synchronously
     private final EventHubProducerClient producerClient;
+    private final String cloudEventTopic;
 
     /**
      * Publishes a CloudEvent to Azure Event Hubs synchronously.

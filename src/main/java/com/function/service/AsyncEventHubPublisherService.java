@@ -27,6 +27,7 @@ public class AsyncEventHubPublisherService implements EventHubPublisherService {
     // Azure Event Hub producer client for sending events asynchronously
     private final EventHubProducerAsyncClient producerAsyncClient;
     private final CloudEventSerializer cloudEventSerializer;
+    private final String cloudEventTopic;
 
     /**
      * Synchronous publishing is not supported in this service.
@@ -77,7 +78,7 @@ public class AsyncEventHubPublisherService implements EventHubPublisherService {
     private byte[] serializeEvent(CloudEvent event, ExecutionContext context) {
         try {
             // Use the injected CloudEventSerializer for serialization
-            return cloudEventSerializer.serialize("unused-topic", event);
+            return cloudEventSerializer.serialize(cloudEventTopic, event);
         } catch (Exception e) {
             // Log the serialization failure and throw a RuntimeException
             context.getLogger().severe("Failed to serialize CloudEvent: " + e.getMessage());

@@ -24,6 +24,7 @@ class SyncEventHubPublisherServiceTest {
     private EventHubProducerClient producerClient;
     private ExecutionContext context;
     private SyncEventHubPublisherService service;
+    private String cloudEventTopic;
 
     @BeforeEach
     void setUp() {
@@ -31,7 +32,8 @@ class SyncEventHubPublisherServiceTest {
         context = mock(ExecutionContext.class);
         when(context.getLogger()).thenReturn(Logger.getLogger("TestLogger"));
 
-        service = new SyncEventHubPublisherService(producerClient);
+        service = new SyncEventHubPublisherService(producerClient, cloudEventTopic);
+        cloudEventTopic = "test-topic"; // Set a default topic for testing
     }
 
     @Test

@@ -10,3 +10,9 @@ spring:
         managed-identity-enabled: false
       profile:
         tenant-id: your-tenant-id
+
+# Topic used by CloudEventSerializer
+# Can be overridden via environment variable or additional profile file
+eventhub:
+  cloudevent:
+    topic: your-default-topic-name

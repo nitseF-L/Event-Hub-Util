@@ -24,6 +24,7 @@ public class AsyncEventHubPublisherServiceTest {
     private CloudEventSerializer cloudEventSerializer;
     private ExecutionContext context;
     private AsyncEventHubPublisherService service;
+    private String cloudEventTopic; 
 
     @BeforeEach
     void setUp() {
@@ -32,7 +33,8 @@ public class AsyncEventHubPublisherServiceTest {
         context = mock(ExecutionContext.class);
         when(context.getLogger()).thenReturn(Logger.getLogger("TestLogger"));
 
-        service = new AsyncEventHubPublisherService(producerAsyncClient, cloudEventSerializer);
+        service = new AsyncEventHubPublisherService(producerAsyncClient, cloudEventSerializer, cloudEventTopic);
+        cloudEventTopic = "deposit";
     }
 
     @Test
@@ -58,7 +60,7 @@ public class AsyncEventHubPublisherServiceTest {
 
         // Mock the serialization process
         byte[] eventBytes = "mocked-event-bytes".getBytes(); // Mocked serialized bytes
-        when(cloudEventSerializer.serialize("unused-topic", event)).thenReturn(eventBytes);
+        when(cloudEventSerializer.serialize(cloudEventTopic, event)).thenReturn(eventBytes);
 
         EventData expectedEventData = new EventData(eventBytes);
 
@@ -83,7 +85,7 @@ public class AsyncEventHubPublisherServiceTest {
 
         // Mock the serialization process
         byte[] eventBytes = "mocked-event-bytes".getBytes(); // Mocked serialized bytes
-        when(cloudEventSerializer.serialize("unused-topic", event)).thenReturn(eventBytes);
+        when(cloudEventSerializer.serialize(cloudEventTopic, event)).thenReturn(eventBytes);
 
         EventData expectedEventData = new EventData(eventBytes);
 
@@ -109,7 +111,7 @@ public class AsyncEventHubPublisherServiceTest {
                 .build();
 
         // Mock the serialization process to throw an exception
-        when(cloudEventSerializer.serialize("unused-topic", event))
+        when(cloudEventSerializer.serialize(cloudEventTopic, event))
                 .thenThrow(new RuntimeException("Serialization failed"));
 
         // Call the publishAsync method and verify it throws an exception
